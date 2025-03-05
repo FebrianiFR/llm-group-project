@@ -1,0 +1,5 @@
+{
+    "data_path": "../input_data/text_fakenews_politic.csv",
+    "output_path": "../output_data/output.csv",
+    "api_key":"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"
+  }
