@@ -6,3 +6,8 @@ Topic: LLM-Based Fake News Detection Project
 
 Source of Data: (will be attached later)
 
+How to run
+1. Put your OpenAI API_KEY in the config.json
+2. Run the main.py
+3. See the result in output_data folder
+
