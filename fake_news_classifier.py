@@ -2,8 +2,9 @@ import re
 import os
 import openai
 import pandas as pd
-import matplotlib.pyplot as plt
 import time
+import nltk
+nltk.download('stopwords')
 from nltk.corpus import stopwords
 import json
 from hybrid_news_classifier import HybridNewsClassifier
@@ -13,7 +14,7 @@ class FakeNewsLLM:
     def __init__(self, api_key, prompt_file):
         self.client = openai.OpenAI(api_key=api_key)
         self.stop_words = set(stopwords.words("english"))
-        self.models = 'gpt-4o'
+        #self.models = 'gpt-4o'
 
         self.hybrid_classifier = HybridNewsClassifier(self.client)
         
@@ -40,49 +41,50 @@ class FakeNewsLLM:
         
         return df, df_text
     
-    def classify_text(self, method, prompt_type, title=None, article_text=None, news_url=None):
+    def classify_text(self, method, prompt_type, title=None, article_text=None, news_url=None, openai_engine=None,dataset=None):
+        #handle hybrid method first as it use different class
         if method == "hybrid":
-            classification, token_usage = self.hybrid_classifier.classify_news(title, news_url, article_text)
+            classification, token_usage = self.hybrid_classifier.classify_news(title, news_url, article_text, openai_engine=None,dataset=None)
             return classification, token_usage
         
+        #validate input
         if prompt_type not in self.prompts:
             raise ValueError(f"Invalid prompt type: {prompt_type}. Must be 'short' or 'long'.")
         if method not in self.prompts[prompt_type]:
             raise ValueError(f"Invalid method: {method}. Available methods: {list(self.prompts[prompt_type].keys())}")
         
+        # retrieve template and create message
         prompt_template = self.prompts[prompt_type][method]
+
+        message = prompt_template.format(
+            title=title if title else "N/A",
+            article_text=article_text if article_text else "N/A",
+            news_url=news_url if news_url else "N/A"
+        )
         
-        if method == "combination":
-            message = prompt_template.format(
-                title=title if title else "N/A",
-                article_text=article_text if article_text else "N/A",
-                news_url=news_url if news_url else "N/A"
-            )
-        else:
-            text_input = title if method == "title" else article_text if method == "text" else news_url
-            message = prompt_template.format(
-                title=title if title else "N/A",
-                text=text_input if text_input else "N/A",
-                news_url=news_url if news_url else "N/A"
-            )
-        
+        start_time_detection = time.time()
         response = self.client.chat.completions.create(
-            model='gpt-4o',
+            model=openai_engine, 
             messages=[{"role": "user", "content": message}],
             temperature=0
         )
+        end_time_detection= time.time()
+        detection_time=end_time_detection - start_time_detection
         
         result = response.choices[0].message.content.strip().lower()
         token_usage = {
+            "Data":dataset,
+            "Engine": openai_engine,
             "Method": method,
             "Prompt Type": prompt_type,
             "Prompt Tokens": response.usage.prompt_tokens,
             "Completion Tokens": response.usage.completion_tokens,
-            "Total Tokens": response.usage.total_tokens
+            "Total Tokens": response.usage.total_tokens,
+            "Detection Time per Article":detection_time
         }
         return result, token_usage
     
-    def evaluate_metrics(self, df,prompt_type, label_column, results_list, processing_time):
+    def evaluate_metrics(self, df,prompt_type, label_column, results_list, processing_time, openai_engine=None,dataset=None):
         print(f"Evaluating metrics for {label_column}...")
         
         valid_labels = ['real', 'fake']
@@ -101,9 +103,11 @@ class FakeNewsLLM:
         print(f"Metrics evaluation completed for {label_column}. {num_invalid} entries were dropped due to unrecognized classification.")
         
         results_list.append({
+            'Data':dataset,
+            'Engine': openai_engine,
             'Prompt Type':prompt_type,
-            'Method': label_column,
-            'Processing Time (s)': processing_time,
+            'Method': str(label_column).replace("_label", ""),
+            'Total Processing Time (s)': processing_time,
             'Accuracy': accuracy,
             'Precision': precision,
             'Recall': recall,
@@ -111,13 +115,41 @@ class FakeNewsLLM:
             'Invalid Classifications': num_invalid
         })
     
-    def save_results(self, results_list, filename="output_data/classification_results.csv"):
-        results_df = pd.DataFrame(results_list)
-        results_df.to_csv(filename, index=False)
+    def create_summary(self, token_usage_list, results_list):
+        engine_cost_dict_per_token={
+            'gpt-4o':{'input':0.0000025,'output':0.00001},
+            'gpt-3.5-turbo':{'input':0.0000005,'output':0.0000015}
+
+
+        }
+        df_cost=pd.DataFrame.from_dict(engine_cost_dict_per_token, orient='index').reset_index()
+        df_cost=df_cost.rename(columns={'index':'Engine'})
+        results_df_temp=pd.DataFrame(results_list)
+        token_df_temp=pd.DataFrame(token_usage_list)
+
+        token_df_temp_agg=token_df_temp.groupby(['Data','Engine','Prompt Type','Method']).agg({'Prompt Tokens':'mean',
+                                                                                      'Completion Tokens':'mean',
+                                                                                      'Total Tokens':'mean',
+                                                                                      'Detection Time per Article':'mean'
+                                                                                      }).reset_index()
+
+        token_df_temp_agg=token_df_temp_agg.rename(columns={'Prompt Tokens':'Avg Prompt Tokens per Article',
+                                                            'Completion Tokens':'Avg Completion Tokens per Article',
+                                                            'Total Tokens':'Avg Total Tokens per Article',
+                                                            'Detection Time per Article':'Avg Detection Time per Article'
+                                                            })
+        final_df=results_df_temp.merge(token_df_temp_agg, on=['Data', 'Engine','Prompt Type','Method'], how='inner')
+
+        final_df=final_df.merge(df_cost,on='Engine',how='inner')
+        final_df['Average OpenAI API Cost (USD) per Article']=(final_df['Avg Prompt Tokens per Article']*final_df['input'])+(final_df['Avg Completion Tokens per Article']*final_df['output'])
+        final_df=final_df.drop(columns=['input','output'])
+        return final_df
+    
+    def csv_export(self, df, filename):
+        df.to_csv('output_data/'+filename+'.csv', index=False)
         print(f"Results saved to {filename}")
 
-
-    def run_pipeline(self, df, sample_size=None, methods=['title', 'text', 'url', 'combination'], remap_labels=False):
+    def run_pipeline(self, df, sample_size=None, methods=['title', 'text', 'url', 'combination'], remap_labels=False,dataset=None):
         print("Starting pipeline...")
         
         if remap_labels:
@@ -129,32 +161,35 @@ class FakeNewsLLM:
         
         results_list = []
         token_usage_list = []
-
+        engine_choices=['gpt-4o','gpt-3.5-turbo']
         prompt_types = ['short','long']
-        for prompt_type in prompt_types:
-            for method in methods:
-                print(f"Evaluating classification using {method} with {prompt_type} prompt...")
+        for engine in engine_choices:
+            for prompt_type in prompt_types:
+                for method in methods:
+                    print(f"Evaluating classification using {method} with {prompt_type} prompt...")
+                    start_time = time.time()
+                    df[method + '_label'], token_usage = zip(*df.apply(lambda row: self.classify_text(method, prompt_type, row.get('title'), row.get('article_text'), row.get('news_url'), openai_engine=engine,dataset=dataset), axis=1))
+                    processing_time = time.time() - start_time
+                    self.evaluate_metrics(df, prompt_type, method + '_label', results_list, processing_time,openai_engine=engine, dataset=dataset)
+                    token_usage_list.extend(token_usage)
+        
+        required_columns_for_hybrid=['title','news_url','article_text']
+        if all(col in df.columns for col in required_columns_for_hybrid):
+            print("Evaluating classification using hybrid method...")
+            for engine in engine_choices:
                 start_time = time.time()
-                df[method + '_label'], token_usage = zip(*df.apply(lambda row: self.classify_text(method, prompt_type, row.get('title'), row.get('article_text'), row.get('news_url')), axis=1))
+                df['hybrid_label'], hybrid_token_usage = zip(*df.apply(lambda row: self.hybrid_classifier.classify_news(row.get('title'), row.get('news_url'), row.get('article_text'), openai_engine=engine,dataset=dataset), axis=1))
                 processing_time = time.time() - start_time
-                self.evaluate_metrics(df, prompt_type, method + '_label', results_list, processing_time)
-                token_usage_list.extend(token_usage)
+                self.evaluate_metrics(df, 'hybrid', 'hybrid_label', results_list, processing_time,openai_engine=engine, dataset=dataset)
+                token_usage_list.extend(hybrid_token_usage)
+
+
         
-        print("Evaluating classification using hybrid method...")
-        start_time = time.time()
-        df['hybrid_label'], hybrid_token_usage = zip(*df.apply(lambda row: self.hybrid_classifier.classify_news(row.get('title'), row.get('news_url'), row.get('article_text')), axis=1))
-        processing_time = time.time() - start_time
-        self.evaluate_metrics(df, 'hybrid', 'hybrid_label', results_list, processing_time)
-        token_usage_list.extend(hybrid_token_usage)
-        
-        self.save_results(results_list)
-        self.save_token_usage(token_usage_list)
-        print("Pipeline completed successfully.")
-        return df, df_text
+
+        final_df=self.create_summary(token_usage_list, results_list)
+        print(f"Pipeline completed successfully for {dataset}")
+        return final_df
     
-    def save_token_usage(self, token_usage_list, filename="output_data/token_usage.csv"):
-        token_df = pd.DataFrame(token_usage_list)
-        token_df.to_csv(filename, index=False)
-        print(f"Token usage saved to {filename}")
+
 
 

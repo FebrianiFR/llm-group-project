@@ -10,9 +10,24 @@ with open("config.json") as f:
 
 api_key = config["OPENAI_API_KEY"]
 fake_news_detector = FakeNewsLLM(api_key, prompt_file="prompts.json")
-df1 = pd.read_csv('input_data/test.tsv', delimiter='\t', header=None)
-df1.columns = ['json_id', 'label', 'title','subject', 'speaker', 'speaker_job','state', 'party', 'barely_true','fasle','half_true', 'mostly_true', 'pants_on_fire','context']
-df2 = pd.read_csv("input_data/text_fakenews_politic.csv")
 
-#df1_result, df1_text_result = fake_news_detector.run_pipeline(df1, sample_size=5, remap_labels=True, methods=['title'], prompt_type="long")
-df2_result, df2_text_result = fake_news_detector.run_pipeline(df2, sample_size=1, remap_labels=False, methods=['title', 'text', 'url'])
+datasets=['liar_test_dataset','fake_news_dataset.csv']
+df_export=pd.DataFrame()
+
+sample_size_used=2
+
+for i in datasets:
+    dataset_config=config.get(i)
+    temp_df=pd.read_csv(dataset_config['file_path'], delimiter=dataset_config['delimiter'])
+    if dataset_config['columns']:
+        temp_df.columns = dataset_config['columns']
+
+
+    summary_df_temp=fake_news_detector.run_pipeline(temp_df, 
+                                                    sample_size=sample_size_used,
+                                                    remap_labels=dataset_config['remap_labels'], 
+                                                    methods=dataset_config['methods'], 
+                                                    dataset=i)
+    df_export=pd.concat([df_export, summary_df_temp])
+
+fake_news_detector.csv_export(df_export, 'output_summary')
