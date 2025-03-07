@@ -1,1 +1,19 @@
-{"openai_key":""}
+{
+    "OPENAI_API_KEY": "",
+    "liar_test_dataset": {
+        "file_path": "input_data/liar_test_dataset.tsv",
+        "delimiter": "\t",
+        "columns": ["json_id", "label", "title", "subject", "speaker", "speaker_job", 
+                    "state", "party", "barely_true", "false", "half_true", "mostly_true", 
+                    "pants_on_fire", "context"],
+        "remap_labels": true,
+        "methods": ["title"]
+    },
+    "fake_news_dataset.csv": {
+        "file_path": "input_data/fake_news_dataset.csv",
+        "delimiter": ",",
+        "columns": null, 
+        "remap_labels": false,
+        "methods": ["title", "text", "url","combination"]
+    }
+}
