@@ -1,8 +1,0 @@
-Method,Prompt Type,Prompt Tokens,Completion Tokens,Total Tokens
-title,short,50,2,52
-text,short,68,2,70
-url,short,69,2,71
-title,long,229,2,231
-text,long,270,2,272
-url,long,278,2,280
-hybrid,hybrid,133,2,135

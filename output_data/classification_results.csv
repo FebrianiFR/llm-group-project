@@ -1,8 +1,0 @@
-Prompt Type,Method,Processing Time (s),Accuracy,Precision,Recall,F1 Score,Invalid Classifications
-short,title_label,0.761242151260376,1.0,1.0,1.0,1.0,0
-short,text_label,0.5154659748077393,0.0,0.0,0.0,0.0,0
-short,url_label,0.4162161350250244,1.0,1.0,1.0,1.0,0
-long,title_label,0.5537152290344238,1.0,1.0,1.0,1.0,0
-long,text_label,0.4064972400665283,0.0,0.0,0.0,0.0,0
-long,url_label,0.4737861156463623,1.0,1.0,1.0,1.0,0
-hybrid,hybrid_label,0.394273042678833,1.0,1.0,1.0,1.0,0
