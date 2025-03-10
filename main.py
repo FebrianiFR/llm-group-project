@@ -14,7 +14,7 @@ fake_news_detector = FakeNewsLLM(api_key, prompt_file="prompts.json")
 datasets=['liar_test_dataset','fake_news_dataset.csv']
 df_export=pd.DataFrame()
 
-sample_size_used=2
+sample_size_used=100
 
 for i in datasets:
     dataset_config=config.get(i)
