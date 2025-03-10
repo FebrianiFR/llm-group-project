@@ -7,6 +7,7 @@ import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
 import json
+import tiktoken
 from hybrid_news_classifier import HybridNewsClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
@@ -30,16 +31,29 @@ class FakeNewsLLM:
         text = re.sub(r"[^\w\s]", "", text)
         return text
     
-    def preprocess_data(self, df):
+    def truncate_article_tokens(self,text, max_tokens=3000, openai_engine=None):
+        enc = tiktoken.encoding_for_model(openai_engine)  
+        tokens = enc.encode(text)
+        truncated_tokens = tokens[:max_tokens]
+        truncated_article=enc.decode(truncated_tokens)
+        return truncated_article
+    
+    def preprocess_data(self, df,openai_engine):
         print("Preprocessing data: Cleaning text...")
         df['clean_title'] = df['title'].apply(self.clean_text)
         
-        df_text = df.dropna(subset=['article_text']) if 'article_text' in df.columns else None
+        #df_text = df.dropna(subset=['article_text']) if 'article_text' in df.columns else None
+        df_text = df.copy() if 'article_text' in df.columns else None
         if df_text is not None:
-            df_text['clean_article'] = df_text['article_text'].apply(self.clean_text)
-        print("Preprocessing completed.")
+            df_text['article_text'] = (df_text['article_text']).astype(str).apply(self.clean_text)
+            df_text['article_text'] = (df['article_text'].astype(str)).apply(lambda row: self.truncate_article_tokens(row, openai_engine=openai_engine))
+            print("Preprocessing completed.")
+            return df_text
+        else:
+            print("Preprocessing completed.")
+            return df
         
-        return df, df_text
+
     
     def classify_text(self, method, prompt_type, title=None, article_text=None, news_url=None, openai_engine=None,dataset=None):
         #handle hybrid method first as it use different class
@@ -149,7 +163,7 @@ class FakeNewsLLM:
         df.to_csv('output_data/'+filename+'.csv', index=False)
         print(f"Results saved to {filename}")
 
-    def run_pipeline(self, df, sample_size=None, methods=['title', 'text', 'url', 'combination'], remap_labels=False,dataset=None):
+    def run_pipeline(self, df, sample_size=None, methods=['title', 'text', 'url'], remap_labels=False,dataset=None):
         print("Starting pipeline...")
         
         if remap_labels:
@@ -157,7 +171,7 @@ class FakeNewsLLM:
         if sample_size:
             print(f"Sampling {sample_size} random entries from the dataset...")
             df = df.sample(n=sample_size, random_state=42)
-        df, df_text = self.preprocess_data(df)
+        
         
         results_list = []
         token_usage_list = []
@@ -167,6 +181,7 @@ class FakeNewsLLM:
             for prompt_type in prompt_types:
                 for method in methods:
                     print(f"Evaluating classification using {method} with {prompt_type} prompt...")
+                    df = self.preprocess_data(df,openai_engine=engine)
                     start_time = time.time()
                     df[method + '_label'], token_usage = zip(*df.apply(lambda row: self.classify_text(method, prompt_type, row.get('title'), row.get('article_text'), row.get('news_url'), openai_engine=engine,dataset=dataset), axis=1))
                     processing_time = time.time() - start_time

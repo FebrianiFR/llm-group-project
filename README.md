@@ -32,7 +32,8 @@ pip install -r requirements.txt
 | Terms          | Definition                   |
 |----------------|------------------------------|
 | Prompt Type  | different prompt type of long and short   |
-| Method  | different methods of fake news detections that consist of title, url, article text, and combination <br> special method of hybrid for using title, url, and text in different class. <br> Difference of hybrid with the combination method is the former will check in order of url, title, and text while the latter combine it and check in one go  |
+| Method  | different methods of fake news detections that consist of title, url, and article text <br> special method of hybrid for using title, url, and text in different class  |
 
 ## Special notes
 - as the article text in the fakenews dataset is scrapped by the authors, some of the sample will not have article text <br> article texts that are missing will fallback to title in the method of article text.
+- Requirements for using your own data: the csv must have the column label of real/fake and one of title,news_url,article_text

@@ -14,6 +14,6 @@
         "delimiter": ",",
         "columns": null, 
         "remap_labels": false,
-        "methods": ["title", "text", "url","combination"]
+        "methods": ["title", "text", "url"]
     }
 }
