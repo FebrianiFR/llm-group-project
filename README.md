@@ -36,7 +36,8 @@ pip install -r requirements.txt
 
 ### 3. Run the code
 ```python
-main.py```
+main.py
+```
 
 ## Key Terms and Definitions
 | Terms          | Definition                   |
