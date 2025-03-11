@@ -25,9 +25,9 @@ This repository as the submission for Group Project in Large Language Model Clas
 - Preprocessing include scrapping article text using the url provided
 
 ### Installing the Libraries
-'''python
+```python
 pip install -r requirements.txt
-'''
+```
 ## Key Terms and Definitions
 | Terms          | Definition                   |
 |----------------|------------------------------|
