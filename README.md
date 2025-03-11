@@ -24,6 +24,13 @@ This repository as the submission for Group Project in Large Language Model Clas
 - Comma separated value, with the file already preprocessed from the original source
 - Preprocessing include scrapping article text using the url provided
 
+We have selected some of the dataset in the input_data folder. 
+
+For full dataset please refer to folder input_data/all_data. 
+- full_liar_dataset.tsv : Combination of the train, test, and validation dataset of Liar Dataset
+- full_fake_news_dataset.csv : Result of the scrapping FakeNews Dataset of politifact and gossipcop.
+
+
 ## How to run the code
 
 ### 1. Installing the Libraries
@@ -38,6 +45,8 @@ pip install -r requirements.txt
 ```python
 main.py
 ```
+
+### 4. See the result in the output_data folder
 
 ## Key Terms and Definitions
 | Terms          | Definition                   |
