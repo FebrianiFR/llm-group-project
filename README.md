@@ -24,10 +24,15 @@ This repository as the submission for Group Project in Large Language Model Clas
 - Comma separated value, with the file already preprocessed from the original source
 - Preprocessing include scrapping article text using the url provided
 
-### Installing the Libraries
+## How to run the code
+
+### 1. Installing the Libraries
 ```python
 pip install -r requirements.txt
 ```
+
+### 2. Modify the config.json file
+
 ## Key Terms and Definitions
 | Terms          | Definition                   |
 |----------------|------------------------------|
