@@ -15,5 +15,6 @@
         "columns": null, 
         "remap_labels": false,
         "methods": ["title", "text", "url"]
-    }
+    },
+    "sample_size_used":100
 }
