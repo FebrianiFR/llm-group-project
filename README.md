@@ -6,7 +6,7 @@ This repository as the submission for Group Project in Large Language Model Clas
 
 
 ## Contents 
-- config.json: placeholder API key, to be changed with you open ai api secret
+- config.json: placeholder API key, to be changed with your open ai api secret
 - prompts.json: prompts used in api call
 - main.py: main script to run the fakenews detection
 - fake_news_classifier.py: class to classify fake news
