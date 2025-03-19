@@ -8,16 +8,16 @@ nltk.download('stopwords')
 from nltk.corpus import stopwords
 import json
 import tiktoken
-from hybrid_news_classifier import HybridNewsClassifier
+
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 class FakeNewsLLM:
     def __init__(self, api_key, prompt_file):
         self.client = openai.OpenAI(api_key=api_key)
         self.stop_words = set(stopwords.words("english"))
-        #self.models = 'gpt-4o'
+      
 
-        self.hybrid_classifier = HybridNewsClassifier(self.client)
+
         
         # Load predefined prompt templates from external JSON file
         with open(prompt_file, 'r') as f:
@@ -56,10 +56,7 @@ class FakeNewsLLM:
 
     
     def classify_text(self, method, prompt_type, title=None, article_text=None, news_url=None, openai_engine=None,dataset=None):
-        #handle hybrid method first as it use different class
-        if method == "hybrid":
-            classification, token_usage = self.hybrid_classifier.classify_news(title, news_url, article_text, openai_engine=None,dataset=None)
-            return classification, token_usage
+        
         
         #validate input
         if prompt_type not in self.prompts:
@@ -188,16 +185,6 @@ class FakeNewsLLM:
                     self.evaluate_metrics(df, prompt_type, method + '_label', results_list, processing_time,openai_engine=engine, dataset=dataset)
                     token_usage_list.extend(token_usage)
         
-        required_columns_for_hybrid=['title','news_url','article_text']
-        if all(col in df.columns for col in required_columns_for_hybrid):
-            print("Evaluating classification using hybrid method...")
-            for engine in engine_choices:
-                start_time = time.time()
-                df['hybrid_label'], hybrid_token_usage = zip(*df.apply(lambda row: self.hybrid_classifier.classify_news(row.get('title'), row.get('news_url'), row.get('article_text'), openai_engine=engine,dataset=dataset), axis=1))
-                processing_time = time.time() - start_time
-                self.evaluate_metrics(df, 'hybrid', 'hybrid_label', results_list, processing_time,openai_engine=engine, dataset=dataset)
-                token_usage_list.extend(hybrid_token_usage)
-
 
         
 
