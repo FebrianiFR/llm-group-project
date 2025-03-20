@@ -10,7 +10,6 @@ This repository as the submission for Group Project in Large Language Model Clas
 - prompts.json: prompts used in api call
 - main.py: main script to run the fakenews detection
 - fake_news_classifier.py: class to classify fake news
-- hybrid_news_classifier.py: special class to combine different method of fake news detection
 - input_data: data used
 - output_data: final output of the fake news detection performance across different prompt types and methods
 
@@ -52,8 +51,9 @@ main.py
 | Terms          | Definition                   |
 |----------------|------------------------------|
 | Prompt Type  | different prompt type of long and short   |
-| Method  | different methods of fake news detections that consist of title, url, and article text <br> special method of hybrid for using title, url, and text in different class  |
+| Method  | different methods of fake news detections that consist of title, url, and article text <br>  |
 
 ## Special notes
 - as the article text in the fakenews dataset is scrapped by the authors, some of the sample will not have article text <br> article texts that are missing will fallback to title in the method of article text.
 - Requirements for using your own data: the csv must have the column label of real/fake and one of title,news_url,article_text
+- We set a random seed for the experiment to ensure the same sample data is used. However, the results may vary due to the inherent behavior of the LLM model.
